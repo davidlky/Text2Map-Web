@@ -1,5 +1,6 @@
-var express = require('express');
 var fs = require('fs');
+var request = require('request');
+var express = require('express');
 var app = express();
 
 try {
@@ -12,6 +13,8 @@ try {
 var GOOGLE_MAPS_API_KEY = fs.readFileSync('GOOGLE_MAPS_API_KEY', 'utf-8').slice(0, -1);
 var GOOGLE_MAPS_ENDPOINT = "https://maps.googleapis.com/maps/api/directions/json";
 
+app.set('json spaces', 4);
+
 app.get('/route/from/:lat/:long/to/:loc', function (req, res) {
   var from_lat = req.params.lat;
   var from_lng = req.params.lng;
@@ -22,7 +25,10 @@ app.get('/route/from/:lat/:long/to/:loc', function (req, res) {
 });
 
 app.get('/health', function (req, res) {
-  res.sendStatus(200);
+  request.get(GOOGLE_MAPS_ENDPOINT + '?origin=Toronto&destination=Montreal&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
+    resp = JSON.parse(resp.body);
+    res.json(resp);
+  });
 });
 
 
