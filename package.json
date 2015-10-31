@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/davidlky/Text2Map-Web#readme",
   "dependencies": {
-    "express": "^4.13.3"
+    "express": "^4.13.3",
+    "request": "^2.65.0"
   }
 }

@@ -21,6 +21,11 @@ app.get('/route/from/:lat/:long/to/:loc', function (req, res) {
   });
 });
 
+app.get('/health', function (req, res) {
+  res.sendStatus(200);
+});
+
+
 var server = app.listen(3000, function () {
   var host = server.address().address;
   var port = server.address().port;
