@@ -1,0 +1,28 @@
+{
+  "name": "text2map-web",
+  "version": "1.0.0",
+  "description": "Xuanji is the best :)!",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidlky/Text2Map-Web.git"
+  },
+  "keywords": [
+    "maps",
+    "sms",
+    "node",
+    "xuanji"
+  ],
+  "author": "David and Xuanji",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/davidlky/Text2Map-Web/issues"
+  },
+  "homepage": "https://github.com/davidlky/Text2Map-Web#readme",
+  "dependencies": {
+    "express": "^4.13.3"
+  }
+}
