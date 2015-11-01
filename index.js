@@ -232,12 +232,12 @@ app.get('/twilio', function (req, res) {
       res.end(resp.toString());
     });
   } else if (command === 'f') {
-    nearby_food(message_body[1], function (err, food_arr) {
+    nearby_food(message_body[1], function (err, wifi_arr) {
 
-      console.log('sending nearby_food sms');
+      console.log('sending nearby_food sms', wifi_arr);
 
       var resp = new twilio.TwimlResponse();
-      resp.message(message_body[0] + '\n' + food_arr.map(function (food) {
+      resp.message(message_body[0] + '\n' + wifi_arr.map(function (food) {
         return [food.lat, food.lng, food.name].join(' ')
       }).join('\n'));
 
