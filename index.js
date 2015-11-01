@@ -12,7 +12,9 @@ try {
 }
 
 var GOOGLE_MAPS_API_KEY = fs.readFileSync('GOOGLE_MAPS_API_KEY', 'utf-8').slice(0, -1);
+
 var GOOGLE_DIRECTIONS_ENDPOINT = "https://maps.googleapis.com/maps/api/directions/json";
+var GOOGLE_PLACES_ENDPOINT = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
 
 app.set('json spaces', 4);
 
@@ -76,7 +78,7 @@ app.get('/twilio', function (req, res) {
   var message_body = req.query.Body.split('\n');
   console.log('received: ', message_body);
 
-  var command = message_body.split(' ')[0];
+  var command = message_body[0].split(' ')[0];
 
   if (command === 'p') {
     route_loc({
