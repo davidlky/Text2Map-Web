@@ -42,16 +42,37 @@ app.get('/health', function (req, res) {
   });
 });
 
+var route_loc = function (params, cb) {
+  var url = GOOGLE_MAPS_ENDPOINT;
+  url += '?origin=';
+  url += params.from_loc;
+  url += '&destination=';
+  url += to_loc;
+  url += '&key=';
+  url += GOOGLE_MAPS_API_KEY;
+
+  request.get(url, function (err, resp) {
+    resp = JSON.parse(resp.body);
+    cb(null, resp.routes[0].overview_polyline.points);
+  });
+}
+
 app.get('/twilio', function (req, res) {
- 
-  console.log(req.params);
-  console.log(req.query);
 
-  var resp = new twilio.TwimlResponse();
-  resp.message("hello from nodejs");
+  var message_body = req.query.Body.split('\n');
 
-  res.writeHead(200, {'Content-Type': 'text/xml'});
-  res.end(resp.toString());
+  route_loc({
+    from_loc: 'Toronto',
+    to_loc: 'Montreal',
+  }, function (err, polyline) {
+
+    var resp = new twilio.TwimlResponse();
+    resp.message(polyline);
+
+    res.writeHead(200, {'Content-Type': 'text/xml'});
+    res.end(resp.toString());
+  });
+
 });
 
 var port = +process.argv[2] || 4000;
