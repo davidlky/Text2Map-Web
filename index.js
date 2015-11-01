@@ -120,7 +120,7 @@ var nearby_wifi = function (from_loc, cb) {
   }, function (err, res) {
     if (err) return cb(err);
     console.log(res);
-    return cb(null, [].concat.apply(res));
+    return cb(null, [].concat.apply([], res));
   });
 }
 
