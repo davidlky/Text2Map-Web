@@ -58,7 +58,7 @@ var route_loc = function (params, cb) {
     if (err) {
       console.log('errror', err);
     } else {
-      resp = JSON.parse(resp.body);    
+      resp = JSON.parse(resp.body);
       if (resp.routes.length === 0) {
         console.log(err);
         cb(null, "no routes found");
@@ -76,17 +76,24 @@ app.get('/twilio', function (req, res) {
   var message_body = req.query.Body.split('\n');
   console.log('received: ', message_body);
 
-  route_loc({
-    from_loc: message_body[1],
-    to_loc: message_body[2],
-  }, function (err, polyline) {
+  var command = message_body.split(' ')[0];
 
-    var resp = new twilio.TwimlResponse();
-    resp.message(message_body[0] + '\n' + polyline);
+  if (command === 'p') {
+    route_loc({
+      from_loc: message_body[1],
+      to_loc: message_body[2],
+    }, function (err, polyline) {
 
-    res.writeHead(200, {'Content-Type': 'text/xml'});
-    res.end(resp.toString());
-  });
+      var resp = new twilio.TwimlResponse();
+      resp.message(message_body[0] + '\n' + polyline);
+
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.end(resp.toString());
+    });
+  } else {
+    console.log('unrecognized command', command);
+  }
+
 
 });
 
