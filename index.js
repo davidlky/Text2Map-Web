@@ -43,6 +43,7 @@ app.get('/health', function (req, res) {
 });
 
 var route_loc = function (params, cb) {
+
   var url = GOOGLE_MAPS_ENDPOINT;
   url += '?origin=';
   url += params.from_loc;
@@ -51,7 +52,10 @@ var route_loc = function (params, cb) {
   url += '&key=';
   url += GOOGLE_MAPS_API_KEY;
 
+  console.log('sending request to gmaps...');
+
   request.get(url, function (err, resp) {
+    console.log('gmaps returned');
     resp = JSON.parse(resp.body);
     cb(null, resp.routes[0].overview_polyline.points);
   });
@@ -60,6 +64,7 @@ var route_loc = function (params, cb) {
 app.get('/twilio', function (req, res) {
 
   var message_body = req.query.Body.split('\n');
+  console.log('received: ', message_body);
 
   route_loc({
     from_loc: message_body[1],
