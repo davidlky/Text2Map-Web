@@ -1,5 +1,6 @@
 var fs = require('fs');
 var request = require('request');
+var twilio = require('twilio');
 var express = require('express');
 var app = express();
 
@@ -41,6 +42,13 @@ app.get('/health', function (req, res) {
   });
 });
 
+app.get('/twilio', function (req, res) {
+  var resp = new twilio.TwimlResponse();
+  resp.message("hello from nodejs");
+
+  res.writeHead(200, {'Content-Type': 'text/xml'});
+  res.end(resp.toString());
+});
 
 var port = +process.argv[2] || 4000;
 
