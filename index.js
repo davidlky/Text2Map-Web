@@ -62,12 +62,12 @@ app.get('/twilio', function (req, res) {
   var message_body = req.query.Body.split('\n');
 
   route_loc({
-    from_loc: 'Toronto',
-    to_loc: 'Montreal',
+    from_loc: message_body[1],
+    to_loc: message_body[2],
   }, function (err, polyline) {
 
     var resp = new twilio.TwimlResponse();
-    resp.message(polyline);
+    resp.message(message_body[0] + '\n' + polyline);
 
     res.writeHead(200, {'Content-Type': 'text/xml'});
     res.end(resp.toString());
