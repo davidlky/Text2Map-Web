@@ -17,15 +17,17 @@ var GOOGLE_DIRECTIONS_ENDPOINT = "https://maps.googleapis.com/maps/api/direction
 var GOOGLE_PLACES_ENDPOINT = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
 var GOOGLE_GEOCODE_ENDPOINT = "https://maps.googleapis.com/maps/api/geocode/json";
 
+var NORTH_AMERICA = {
+  'lat': 42.7632012,
+  'lng': -78.4410568
+}
+
 app.set('json spaces', 4);
 
 app.get('/geocode/:address', function (req, res) {
   var address = req.params.address;
 
-  geocode(address, {
-      'lat': 42.7632012,
-      'lng': -78.4410568
-    }, 500, function (err, geo) {
+  geocode(address, NORTH_AMERICA, 500, function (err, geo) {
     if (err) return res.sendStatus(500);
     res.json(geo);
   });
@@ -39,6 +41,13 @@ app.get('/route/:from_loc/:to_loc', function (req, res) {
   });
 });
 
+app.get('/food/:from_loc', function (req, res) {
+  nearby_food(req.params.from_loc, function (err, resp) {
+    if (err) return res.sendStatus(500);
+    return res.json(resp);
+  });
+});
+
 app.get('/health', function (req, res) {
   request.get(GOOGLE_DIRECTIONS_ENDPOINT + '?origin=Toronto&destination=Montreal&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
     resp = JSON.parse(resp.body);
@@ -46,7 +55,20 @@ app.get('/health', function (req, res) {
   });
 });
 
+var is_latlng = function (str) {
+  for (var i=0; i<str.length; str++) {
+    if ("-.0123456789".indexOf(str[i]) === -1) return false;
+  }
+  return true;
+}
+
 var geocode = function (address, near_ll, radius, cb) {
+
+  if (is_latlng(address)) return cb(null, {
+    'lat': +address.split(',')[0],
+    'lng': +address.split(',')[1]
+  });
+
   var url = GOOGLE_GEOCODE_ENDPOINT;
   url += '?address=';
   url += address;
@@ -59,7 +81,6 @@ var geocode = function (address, near_ll, radius, cb) {
     if (err) return console.log('error', err);
     resp = JSON.parse(resp.body);
     if (resp.results.length === 0) return cb("geocode failed");
-
 
     var scores = resp.results.map(function (result) {
       return Math.pow(result.geometry.location.lat - near_ll.lat, 2) +
@@ -77,6 +98,37 @@ var geocode = function (address, near_ll, radius, cb) {
   });
 }
 
+var nearby_food = function (from_loc, cb) {
+
+  console.log('nearby_food', from_loc);
+
+  geocode(from_loc, NORTH_AMERICA, 500, function (err, ll) {
+    if (err) return cb(err);
+
+    var url = GOOGLE_PLACES_ENDPOINT;
+    url += '?location=';
+    url += [ll.lat, ll.lng].join(',');
+    url += '&radius=500';
+    // url += '&opennow=true';
+    url += '&types=food';
+    url += '&key=';
+    url += GOOGLE_MAPS_API_KEY;
+
+    request.get(url, function (err, resp) {
+      if (err) return console.log('error', err);
+      resp = JSON.parse(resp.body);
+
+      return cb(null, resp.results.map(function (result) {
+        var ret = result.geometry.location;
+        ret.name = result.name;
+        return ret;
+      }));
+
+    });
+
+  });
+
+}
 
 var route_loc = function (from_loc, to_loc, cb) {
 
@@ -119,6 +171,15 @@ app.get('/twilio', function (req, res) {
 
       res.writeHead(200, {'Content-Type': 'text/xml'});
       res.end(resp.toString());
+    });
+  } else if (command === 'f') {
+    nearby_food(message_body[1], function (err, food_arr) {
+
+      var resp = new twilio.TwimlResponse();
+      resp.message(message_body[0] + '\n' + food_arr.map(function (food) {
+        return [food.lat, food.lng, food.name].join(' ')
+      }).join('\n'))
+
     });
   } else {
     console.log('unrecognized command', command);
