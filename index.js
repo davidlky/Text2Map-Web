@@ -47,7 +47,7 @@ var route_loc = function (params, cb) {
   url += '?origin=';
   url += params.from_loc;
   url += '&destination=';
-  url += to_loc;
+  url += params.to_loc;
   url += '&key=';
   url += GOOGLE_MAPS_API_KEY;
 
