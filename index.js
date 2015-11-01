@@ -80,7 +80,7 @@ app.get('/twilio', function (req, res) {
 
   var command = message_body[0].split(' ')[0];
 
-  if (command === 'p') {
+  if (command === 'r') {
     route_loc({
       from_loc: message_body[1],
       to_loc: message_body[2],
