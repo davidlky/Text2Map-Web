@@ -55,9 +55,19 @@ var route_loc = function (params, cb) {
   console.log('sending request to gmaps...');
 
   request.get(url, function (err, resp) {
-    console.log('gmaps returned');
-    resp = JSON.parse(resp.body);
-    cb(null, resp.routes[0].overview_polyline.points);
+    if (err) {
+      console.log('errror', err);
+    } else {
+      resp = JSON.parse(resp.body);    
+      if (resp.routes.length === 0) {
+        console.log(err);
+        cb(null, "no routes found");
+      } else {
+        var polyline = resp.routes[0].overview_polyline.points;
+        console.log('gmaps returned', polyline);
+        cb(null, polyline);
+      }
+    }
   });
 }
 
