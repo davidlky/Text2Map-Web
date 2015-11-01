@@ -12,7 +12,7 @@ try {
 }
 
 var GOOGLE_MAPS_API_KEY = fs.readFileSync('GOOGLE_MAPS_API_KEY', 'utf-8').slice(0, -1);
-var GOOGLE_MAPS_ENDPOINT = "https://maps.googleapis.com/maps/api/directions/json";
+var GOOGLE_DIRECTIONS_ENDPOINT = "https://maps.googleapis.com/maps/api/directions/json";
 
 app.set('json spaces', 4);
 
@@ -20,7 +20,7 @@ app.get('/route/from/:from_loc/to/:to_loc', function (req, res) {
   var from_loc = req.params.from_loc;
   var to_loc = req.params.to_loc;
 
-  request.get(GOOGLE_MAPS_ENDPOINT + '?origin=' + from_loc + '&destination=' + to_loc + '&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
+  request.get(GOOGLE_DIRECTIONS_ENDPOINT + '?origin=' + from_loc + '&destination=' + to_loc + '&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
     resp = JSON.parse(resp.body);
     res.send(resp.routes[0].overview_polyline.points);
   });
@@ -36,7 +36,7 @@ app.get('/route/from-latlng/:lat/:long/to/:loc', function (req, res) {
 });
 
 app.get('/health', function (req, res) {
-  request.get(GOOGLE_MAPS_ENDPOINT + '?origin=Toronto&destination=Montreal&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
+  request.get(GOOGLE_DIRECTIONS_ENDPOINT + '?origin=Toronto&destination=Montreal&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
     resp = JSON.parse(resp.body);
     res.json(resp);
   });
@@ -44,7 +44,7 @@ app.get('/health', function (req, res) {
 
 var route_loc = function (params, cb) {
 
-  var url = GOOGLE_MAPS_ENDPOINT;
+  var url = GOOGLE_DIRECTIONS_ENDPOINT;
   url += '?origin=';
   url += params.from_loc;
   url += '&destination=';
