@@ -2,6 +2,7 @@ var fs = require('fs');
 var request = require('request');
 var twilio = require('twilio');
 var express = require('express');
+var async = require('async');
 var app = express();
 
 try {
@@ -43,6 +44,21 @@ app.get('/route/:from_loc/:to_loc', function (req, res) {
 
 app.get('/food/:from_loc', function (req, res) {
   nearby_food(req.params.from_loc, function (err, resp) {
+    if (err) return res.sendStatus(500);
+    return res.json(resp);
+  });
+});
+
+app.get('/macdonalds/:from_loc', function (req, res) {
+  nearby_wifi_generator('macdonalds')(req.params.from_loc, function (err, resp) {
+    if (err) return res.sendStatus(500);
+    return res.json(resp);
+  });
+});
+
+app.get('/wifi/:from_loc', function (req, res) {
+  nearby_wifi(req.params.from_loc, function (err, resp) {
+    console.log('yo!');
     if (err) return res.sendStatus(500);
     return res.json(resp);
   });
@@ -97,6 +113,49 @@ var geocode = function (address, near_ll, radius, cb) {
 
   });
 }
+
+var nearby_wifi = function (from_loc, cb) {
+  async.map(['macdonalds', 'starbucks', 'timhortons'], function (chain, cb) {
+    nearby_wifi_generator(chain)(from_loc, cb);
+  }, function (err, res) {
+    if (err) return cb(err);
+    console.log(res);
+    return cb(null, [].concat.apply(res));
+  });
+}
+
+var nearby_wifi_generator = function (chain) {
+
+  return function (from_loc, cb) {
+
+    geocode(from_loc, NORTH_AMERICA, 500, function (err, ll) {
+      if (err) return cb(err);
+
+      var url = GOOGLE_PLACES_ENDPOINT;
+      url += '?location=';
+      url += [ll.lat, ll.lng].join(',');
+      url += '&radius=1000';
+      url += '&keyword=';
+      url += chain;
+      url += '&key=';
+      url += GOOGLE_MAPS_API_KEY;
+
+      request.get(url, function (err, resp) {
+        if (err) return console.log('error', err);
+        resp = JSON.parse(resp.body);
+
+        return cb(null, resp.results.map(function (result) {
+          var ret = result.geometry.location;
+          ret.name = result.name;
+          return ret;
+        }));
+
+      });
+
+    });
+  }
+}
+
 
 var nearby_food = function (from_loc, cb) {
 
@@ -186,6 +245,22 @@ app.get('/twilio', function (req, res) {
       res.end(resp.toString());
 
     });
+  } else if (command === 'w') {
+
+    nearby_wifi(message_body[1], function (err, food_arr) {
+      console.log('sending nearby_wifi sms');
+
+      var resp = new twilio.TwimlResponse();
+
+      resp.message(message_body[0] + '\n' + food_arr.map(function (food) {
+        return [food.lat, food.lng, food.name].join(' ')
+      }).join('\n'));
+
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.end(resp.toString());
+
+    });
+
   } else {
     console.log('unrecognized command', command);
   }
