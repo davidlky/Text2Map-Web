@@ -15,26 +15,18 @@ var GOOGLE_MAPS_API_KEY = fs.readFileSync('GOOGLE_MAPS_API_KEY', 'utf-8').slice(
 
 var GOOGLE_DIRECTIONS_ENDPOINT = "https://maps.googleapis.com/maps/api/directions/json";
 var GOOGLE_PLACES_ENDPOINT = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+var GOOGLE_GEOCODE_ENDPOINT = "https://maps.googleapis.com/maps/api/geocode/json";
 
 app.set('json spaces', 4);
 
-app.get('/route/from/:from_loc/to/:to_loc', function (req, res) {
-  var from_loc = req.params.from_loc;
-  var to_loc = req.params.to_loc;
+app.get('/geocode/:address', function (req, res) {
+  var address = req.params.address;
 
-  request.get(GOOGLE_DIRECTIONS_ENDPOINT + '?origin=' + from_loc + '&destination=' + to_loc + '&key=' + GOOGLE_MAPS_API_KEY, function (err, resp) {
-    resp = JSON.parse(resp.body);
-    res.send(resp.routes[0].overview_polyline.points);
+  geocode(address, function (err, geo) {
+    if (err) return res.sendStatus(500);
+    res.json(geo);
   });
-});
 
-app.get('/route/from-latlng/:lat/:long/to/:loc', function (req, res) {
-  var from_lat = req.params.lat;
-  var from_lng = req.params.lng;
-  var to_loc = req.params.loc
-  res.json({
-    'lat': lat,
-  });
 });
 
 app.get('/health', function (req, res) {
@@ -43,6 +35,62 @@ app.get('/health', function (req, res) {
     res.json(resp);
   });
 });
+
+var is_latlng = function (str) {
+  for (var i=0; i<str.length; i++) {
+    if (["-0123456789."].indexOf(str[i]) == -1) return false;
+  }
+  return true;
+}
+
+var fuzzy_nearby_route_loc = function (params, cb) {
+
+  var geocode_a;
+  if (is_latlng(params.from_loc)) {
+    geocode_a = function (cb) {
+      return cb(null, params.from_loc);
+    }
+  } else {
+    geocode_a = function (cb) {
+
+    }
+  }
+
+}
+
+var geocode = function (address, cb) {
+  var url = GOOGLE_GEOCODE_ENDPOINT;
+  url += '?address=';
+  url += address;
+  url += '&key=';
+  url += GOOGLE_MAPS_API_KEY;
+
+  console.log('sending geocode request to gmaps...');
+
+  request.get(url, function (err, resp) {
+    if (err) return console.log('error', err);
+    resp = JSON.parse(resp.body);
+    if (resp.results.length === 0) return cb("geocode failed");
+
+
+    var scores = resp.results.map(function (result) {
+      return Math.pow(result.geometry.location.lat - 42.7632012, 2) +
+             Math.pow(result.geometry.location.lng + 78.4410568, 2);
+    });
+
+    console.log(scores);
+
+    var idx_of_best = 0;
+    for (var i=0; i<scores.length; i++) {
+      if (scores[i] < 500) return cb(null, resp.results[i].geometry.location);
+      if (scores[i] < scores[idx_of_best]) idx_of_best = i;
+    }
+
+    return cb(null, resp.results[idx_of_best].geometry.location);
+
+  });
+}
+
 
 var route_loc = function (params, cb) {
 
@@ -54,22 +102,17 @@ var route_loc = function (params, cb) {
   url += '&key=';
   url += GOOGLE_MAPS_API_KEY;
 
-  console.log('sending request to gmaps...');
+  console.log('sending route request to gmaps...');
 
   request.get(url, function (err, resp) {
-    if (err) {
-      console.log('errror', err);
-    } else {
-      resp = JSON.parse(resp.body);
-      if (resp.routes.length === 0) {
-        console.log(err);
-        cb(null, "no routes found");
-      } else {
-        var polyline = resp.routes[0].overview_polyline.points;
-        console.log('gmaps returned', polyline);
-        cb(null, polyline);
-      }
-    }
+    if (err) return console.log(err);
+    resp = JSON.parse(resp.body);
+    if (resp.routes.length === 0) return cb("no routes found");
+
+    var polyline = resp.routes[0].overview_polyline.points;
+    console.log('gmaps returned', polyline);
+    cb(null, polyline);
+
   });
 }
 
