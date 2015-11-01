@@ -22,11 +22,21 @@ app.set('json spaces', 4);
 app.get('/geocode/:address', function (req, res) {
   var address = req.params.address;
 
-  geocode(address, function (err, geo) {
+  geocode(address, {
+      'lat': 42.7632012,
+      'lng': -78.4410568
+    }, 500, function (err, geo) {
     if (err) return res.sendStatus(500);
     res.json(geo);
   });
 
+});
+
+app.get('/route/:from_loc/:to_loc', function (req, res) {
+  route_loc(req.params.from_loc, req.params.to_loc, function (err, polyline) {
+    if (err) return res.sendStatus(500);
+    return res.json(polyline);
+  });
 });
 
 app.get('/health', function (req, res) {
@@ -36,29 +46,7 @@ app.get('/health', function (req, res) {
   });
 });
 
-var is_latlng = function (str) {
-  for (var i=0; i<str.length; i++) {
-    if (["-0123456789."].indexOf(str[i]) == -1) return false;
-  }
-  return true;
-}
-
-var fuzzy_nearby_route_loc = function (params, cb) {
-
-  var geocode_a;
-  if (is_latlng(params.from_loc)) {
-    geocode_a = function (cb) {
-      return cb(null, params.from_loc);
-    }
-  } else {
-    geocode_a = function (cb) {
-
-    }
-  }
-
-}
-
-var geocode = function (address, cb) {
+var geocode = function (address, near_ll, radius, cb) {
   var url = GOOGLE_GEOCODE_ENDPOINT;
   url += '?address=';
   url += address;
@@ -74,15 +62,13 @@ var geocode = function (address, cb) {
 
 
     var scores = resp.results.map(function (result) {
-      return Math.pow(result.geometry.location.lat - 42.7632012, 2) +
-             Math.pow(result.geometry.location.lng + 78.4410568, 2);
+      return Math.pow(result.geometry.location.lat - near_ll.lat, 2) +
+             Math.pow(result.geometry.location.lng - near_ll.lng, 2);
     });
-
-    console.log(scores);
 
     var idx_of_best = 0;
     for (var i=0; i<scores.length; i++) {
-      if (scores[i] < 500) return cb(null, resp.results[i].geometry.location);
+      if (scores[i] < radius) return cb(null, resp.results[i].geometry.location);
       if (scores[i] < scores[idx_of_best]) idx_of_best = i;
     }
 
@@ -92,13 +78,15 @@ var geocode = function (address, cb) {
 }
 
 
-var route_loc = function (params, cb) {
+var route_loc = function (from_loc, to_loc, cb) {
+
+  console.log('route_loc', from_loc, to_loc);
 
   var url = GOOGLE_DIRECTIONS_ENDPOINT;
   url += '?origin=';
-  url += params.from_loc;
+  url += from_loc;
   url += '&destination=';
-  url += params.to_loc;
+  url += to_loc;
   url += '&key=';
   url += GOOGLE_MAPS_API_KEY;
 
@@ -124,10 +112,7 @@ app.get('/twilio', function (req, res) {
   var command = message_body[0].split(' ')[0];
 
   if (command === 'r') {
-    route_loc({
-      from_loc: message_body[1],
-      to_loc: message_body[2],
-    }, function (err, polyline) {
+    route_loc(message_body[1], message_body[2], function (err, polyline) {
 
       var resp = new twilio.TwimlResponse();
       resp.message(message_body[0] + '\n' + polyline);
