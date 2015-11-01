@@ -175,10 +175,15 @@ app.get('/twilio', function (req, res) {
   } else if (command === 'f') {
     nearby_food(message_body[1], function (err, food_arr) {
 
+      console.log('sending nearby_food sms');
+
       var resp = new twilio.TwimlResponse();
       resp.message(message_body[0] + '\n' + food_arr.map(function (food) {
         return [food.lat, food.lng, food.name].join(' ')
-      }).join('\n'))
+      }).join('\n'));
+
+      res.writeHead(200, {'Content-Type': 'text/xml'});
+      res.end(resp.toString());
 
     });
   } else {
